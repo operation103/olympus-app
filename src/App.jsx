@@ -1,109 +1,62 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Plus, 
-  CheckCircle2, 
-  Circle, 
-  Flame, 
-  Trophy, 
-  Dumbbell, 
-  Brain, 
-  Zap, 
-  Trash2,
-  ExternalLink 
+  Plus, Check, Circle, Flame, Trophy, 
+  Dumbbell, Brain, Zap, Trash2, User, LayoutDashboard, Settings 
 } from 'lucide-react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-// Utility for Tailwind classes
-function cn(...inputs) {
-  return twMerge(clsx(inputs));
-}
-
-const CATEGORIES = [
-  { id: 'גופני', icon: Dumbbell, color: 'text-blue-500' },
-  { id: 'מנטלי', icon: Brain, color: 'text-purple-500' },
-  { id: 'פרודוקטיביות', icon: Zap, color: 'text-amber-500' },
-];
 
 export default function OlympusApp() {
+  // State
   const [habits, setHabits] = useState([]);
   const [newHabitName, setNewHabitName] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState(CATEGORIES[0].id);
-  const [streak, setStreak] = useState(0);
-  const [showFunnel, setShowFunnel] = useState(false);
+  const [category, setCategory] = useState('גופני');
+  const [userId, setUserId] = useState('');
+  const [activeTab, setActiveTab] = useState('home');
 
-  // Load Data
+  // אתחול נתונים וזיהוי משתמש
   useEffect(() => {
     const savedHabits = localStorage.getItem('olympus_habits');
+    const savedId = localStorage.getItem('olympus_userid');
+    
     if (savedHabits) setHabits(JSON.parse(savedHabits));
+    
+    if (savedId) {
+      setUserId(savedId);
+    } else {
+      const newId = 'OLY-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+      localStorage.setItem('olympus_userid', newId);
+      setUserId(newId);
+    }
   }, []);
 
-  // Save Data & Calculate Streak
   useEffect(() => {
     localStorage.setItem('olympus_habits', JSON.stringify(habits));
-    calculateStreak();
   }, [habits]);
 
-  const calculateStreak = () => {
-    if (habits.length === 0) {
-      setStreak(0);
-      return;
-    }
-
-    let currentStreak = 0;
-    const today = new Date();
-    
-    for (let i = 0; i < 30; i++) {
-      const dateToCheck = new Date();
-      dateToCheck.setDate(today.getDate() - i);
-      const dateStr = dateToCheck.toISOString().split('T')[0];
-      
-      const allCompleted = habits.every(h => h.completedDates.includes(dateStr));
-      
-      if (allCompleted) {
-        currentStreak++;
-      } else if (i === 0) {
-        // If today isn't finished yet, keep checking from yesterday
-        continue;
-      } else {
-        break;
-      }
-    }
-    
-    setStreak(currentStreak);
-    // Funnel Logic: 3 days in a row
-    if (currentStreak >= 3) setShowFunnel(true);
-  };
-
-  const addHabit = (e) => {
-    e.preventDefault();
+  const addHabit = () => {
     if (!newHabitName.trim()) return;
-    
     const newHabit = {
       id: Date.now(),
       name: newHabitName,
-      category: selectedCategory,
+      category: category,
       completedDates: [],
-      createdAt: new Date().toISOString()
     };
-    
     setHabits([...habits, newHabit]);
     setNewHabitName('');
   };
 
-  const toggleHabit = (habitId) => {
+  const toggleHabit = (id) => {
     const today = new Date().toISOString().split('T')[0];
-    setHabits(habits.map(habit => {
-      if (habit.id === habitId) {
-        const isCompleted = habit.completedDates.includes(today);
+    setHabits(habits.map(h => {
+      if (h.id === id) {
+        const done = h.completedDates.includes(today);
         return {
-          ...habit,
-          completedDates: isCompleted 
-            ? habit.completedDates.filter(d => d !== today)
-            : [...habit.completedDates, today]
+          ...h,
+          completedDates: done 
+            ? h.completedDates.filter(d => d !== today)
+            : [...h.completedDates, today]
         };
       }
-      return habit;
+      return h;
     }));
   };
 
@@ -115,170 +68,134 @@ export default function OlympusApp() {
   const completedToday = habits.filter(h => h.completedDates.includes(todayStr)).length;
 
   return (
-    <div dir="rtl" className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-blue-500/30">
-      {/* Header */}
-      <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-10">
-        <div className="max-w-md mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-black tracking-tighter text-blue-500 italic">OLYMPUS</h1>
-          <div className="flex items-center gap-2 bg-slate-800 px-3 py-1 rounded-full">
-            <Flame className={cn("w-5 h-5", streak > 0 ? "text-orange-500 fill-orange-500" : "text-slate-500")} />
-            <span className="font-bold">{streak} ימים</span>
-          </div>
+    <div dir="rtl" className="min-h-screen bg-[#020617] text-white font-sans pb-24">
+      
+      {/* Header & Logo */}
+      <header className="bg-[#0f172a] p-6 text-center border-b border-blue-900/50 shadow-lg">
+        <h1 className="text-3xl font-black tracking-widest text-blue-400 italic">OLYMPUS</h1>
+        <p className="text-xs text-blue-200 mt-1 font-light uppercase tracking-tighter">מעקב הרגלים ומשמעת עצמית</p>
+        <div className="mt-3 inline-block bg-blue-900/30 px-3 py-1 rounded-full border border-blue-500/20">
+          <span className="text-[10px] text-blue-300 font-mono">מזהה משתמש: {userId}</span>
         </div>
       </header>
 
-      <main className="max-w-md mx-auto px-4 py-6 pb-24">
-        {/* Greeting Section */}
-        <section className="mb-8">
-          <h2 className="text-3xl font-bold mb-1">שלום, לוחם</h2>
-          <p className="text-slate-400">
-            {habits.length === 0 
-              ? "התחל בבניית המשמעת העצמית שלך היום." 
-              : `השלמת ${completedToday} מתוך ${habits.length} המשימות להיום.`}
-          </p>
-        </section>
+      <main className="max-w-md mx-auto p-5">
+        
+        {activeTab === 'home' && (
+          <div className="space-y-8 animate-in fade-in duration-500">
+            {/* Dashboard Summary */}
+            <section className="bg-gradient-to-br from-blue-900 to-[#1e293b] p-6 rounded-3xl shadow-xl border border-blue-400/20 text-center">
+              <div className="flex justify-around items-center">
+                <div>
+                  <p className="text-blue-200 text-xs mb-1">השלמת היום</p>
+                  <p className="text-3xl font-bold">{completedToday}/{habits.length}</p>
+                </div>
+                <div className="h-12 w-[1px] bg-blue-400/20"></div>
+                <div>
+                  <p className="text-blue-200 text-xs mb-1">רצף נוכחי</p>
+                  <div className="flex items-center gap-1 justify-center text-3xl font-bold text-orange-400">
+                    <Flame className="w-6 h-6 fill-current" />
+                    <span>3</span>
+                  </div>
+                </div>
+              </div>
+            </section>
 
-        {/* Funnel Success Card */}
-        {showFunnel && (
-          <div className="mb-8 p-6 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 border border-blue-400 shadow-xl shadow-blue-900/20 animate-in fade-in zoom-in duration-500">
-            <div className="flex items-start justify-between">
-              <div>
-                <Trophy className="w-10 h-10 text-white mb-3" />
-                <h3 className="text-xl font-bold text-white mb-1">הישג יוצא דופן!</h3>
-                <p className="text-blue-100 text-sm mb-4">השלמת 3 ימים רצופים של משמעת ברזל. אתה מוכן לשלב הבא.</p>
-                <a 
-                  href="https://whatsapp.com" 
-                  target="_blank" 
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 bg-white text-blue-700 px-4 py-2 rounded-lg font-bold text-sm hover:bg-slate-100 transition-colors"
+            {/* Add Habit Section */}
+            <section className="bg-[#0f172a] p-5 rounded-2xl border border-slate-800">
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-blue-400">
+                <Plus className="w-5 h-5" /> הוספת הרגל חדש
+              </h3>
+              <div className="space-y-4">
+                <input 
+                  type="text" 
+                  value={newHabitName}
+                  onChange={(e) => setNewHabitName(e.target.value)}
+                  placeholder="מה המטרה שלך?"
+                  className="w-full bg-[#020617] border border-slate-700 p-4 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-center"
+                />
+                <div className="grid grid-cols-3 gap-2">
+                  {['גופני', 'מנטלי', 'פרודוקטיביות'].map(cat => (
+                    <button 
+                      key={cat}
+                      onClick={() => setCategory(cat)}
+                      className={`py-2 text-xs rounded-lg transition-all ${category === cat ? 'bg-blue-600 border-blue-400' : 'bg-slate-800 border-transparent'} border`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+                <button 
+                  onClick={addHabit}
+                  className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-900/20 transition-transform active:scale-95"
                 >
-                  הצטרף לקהילת ה-WhatsApp של Olympus
-                  <ExternalLink className="w-4 h-4" />
-                </a>
+                  הוסף לרשימה
+                </button>
+              </div>
+            </section>
+
+            {/* List Section */}
+            <section className="space-y-3">
+              <h3 className="text-sm font-bold text-slate-500 mr-2 uppercase tracking-widest">משימות היום</h3>
+              {habits.map(h => {
+                const isDone = h.completedDates.includes(todayStr);
+                return (
+                  <div key={h.id} className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${isDone ? 'bg-blue-950/20 border-blue-900/50 opacity-50' : 'bg-[#0f172a] border-slate-800 shadow-md'}`}>
+                    <div className="flex items-center gap-4">
+                      <button onClick={() => toggleHabit(h.id)} className={`transition-all ${isDone ? 'text-green-500' : 'text-slate-500'}`}>
+                        {isDone ? <Check className="w-8 h-8 stroke-[3px]" /> : <Circle className="w-8 h-8" />}
+                      </button>
+                      <div>
+                        <p className={`font-bold ${isDone ? 'line-through text-slate-500' : 'text-white'}`}>{h.name}</p>
+                        <span className="text-[10px] text-blue-400 px-2 py-0.5 bg-blue-900/30 rounded-full">{h.category}</span>
+                      </div>
+                    </div>
+                    <button onClick={() => deleteHabit(h.id)} className="text-slate-700 hover:text-red-500 p-2">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              })}
+            </section>
+          </div>
+        )}
+
+        {activeTab === 'profile' && (
+          <div className="text-center py-20 animate-in slide-in-from-bottom-5 duration-500">
+            <div className="w-24 h-24 bg-blue-600 rounded-full mx-auto mb-4 flex items-center justify-center shadow-2xl shadow-blue-500/20">
+              <User className="w-12 h-12 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold">הפרופיל שלך</h2>
+            <p className="text-slate-400 mt-2">מזהה: {userId}</p>
+            <div className="mt-10 grid grid-cols-2 gap-4">
+              <div className="bg-[#0f172a] p-4 rounded-2xl border border-slate-800">
+                <p className="text-blue-400 font-bold text-xl">{habits.length}</p>
+                <p className="text-xs text-slate-400">הרגלים פעילים</p>
+              </div>
+              <div className="bg-[#0f172a] p-4 rounded-2xl border border-slate-800">
+                <p className="text-orange-400 font-bold text-xl">30%</p>
+                <p className="text-xs text-slate-400">אחוזי הצלחה</p>
               </div>
             </div>
           </div>
         )}
-
-        {/* Add Habit Form */}
-        <form onSubmit={addHabit} className="mb-8 space-y-4 bg-slate-900 p-4 rounded-xl border border-slate-800">
-          <input
-            type="text"
-            value={newHabitName}
-            onChange={(e) => setNewHabitName(e.target.value)}
-            placeholder="שם ההרגל (למשל: אימון בוקר)"
-            className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-right"
-          />
-          
-          <div className="flex gap-2">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => setSelectedCategory(cat.id)}
-                className={cn(
-                  "flex-1 py-2 px-1 rounded-md border text-xs font-medium transition-all flex flex-col items-center gap-1",
-                  selectedCategory === cat.id 
-                    ? "bg-slate-800 border-blue-500 text-blue-400" 
-                    : "bg-slate-950 border-slate-800 text-slate-500"
-                )}
-              >
-                <cat.icon className="w-4 h-4" />
-                {cat.id}
-              </button>
-            ))}
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            הוסף הרגל לרשימה
-          </button>
-        </form>
-
-        {/* Habits List */}
-        <div className="space-y-3">
-          <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest px-1">הרגלים פעילים</h3>
-          {habits.length === 0 && (
-            <div className="text-center py-12 border-2 border-dashed border-slate-800 rounded-2xl">
-              <p className="text-slate-600">אין הרגלים עדיין. זה הזמן להתחיל.</p>
-            </div>
-          )}
-          {habits.map((habit) => {
-            const isDone = habit.completedDates.includes(todayStr);
-            const CategoryIcon = CATEGORIES.find(c => c.id === habit.category)?.icon || Circle;
-            
-            return (
-              <div 
-                key={habit.id}
-                className={cn(
-                  "group flex items-center justify-between p-4 rounded-xl border transition-all duration-300",
-                  isDone 
-                    ? "bg-slate-900/40 border-slate-800 opacity-60" 
-                    : "bg-slate-900 border-slate-800 hover:border-slate-700"
-                )}
-              >
-                <div className="flex items-center gap-4">
-                  <button 
-                    onClick={() => toggleHabit(habit.id)}
-                    className={cn(
-                      "transition-transform active:scale-90",
-                      isDone ? "text-green-500" : "text-slate-600 hover:text-slate-400"
-                    )}
-                  >
-                    {isDone ? <CheckCircle2 className="w-8 h-8" /> : <Circle className="w-8 h-8" />}
-                  </button>
-                  
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className={cn("text-xs px-2 py-0.5 rounded-full bg-slate-800 font-medium", 
-                        CATEGORIES.find(c => c.id === habit.category)?.color
-                      )}>
-                        {habit.category}
-                      </span>
-                    </div>
-                    <h4 className={cn(
-                      "font-bold text-lg mt-0.5",
-                      isDone && "line-through text-slate-500"
-                    )}>
-                      {habit.name}
-                    </h4>
-                  </div>
-                </div>
-
-                <button 
-                  onClick={() => deleteHabit(habit.id)}
-                  className="text-slate-700 hover:text-red-500 p-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-              </div>
-            );
-          })}
-        </div>
       </main>
 
-      {/* Stats Summary Footer */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-slate-950/80 backdrop-blur-xl border-t border-slate-800 p-4">
-        <div className="max-w-md mx-auto grid grid-cols-3 gap-4 text-center">
-          <div>
-            <p className="text-[10px] text-slate-500 uppercase font-bold">ביצועים</p>
-            <p className="text-lg font-black text-blue-500">
-              {habits.length > 0 ? Math.round((completedToday / habits.length) * 100) : 0}%
-            </p>
-          </div>
-          <div className="border-x border-slate-800">
-            <p className="text-[10px] text-slate-500 uppercase font-bold">רצף נוכחי</p>
-            <p className="text-lg font-black text-white">{streak} ימים</p>
-          </div>
-          <div>
-            <p className="text-[10px] text-slate-500 uppercase font-bold">סה"כ הרגלים</p>
-            <p className="text-lg font-black text-white">{habits.length}</p>
-          </div>
-        </div>
-      </footer>
+      {/* Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-[#0f172a]/90 backdrop-blur-xl border-t border-slate-800 p-4 flex justify-around items-center z-50">
+        <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center gap-1 ${activeTab === 'home' ? 'text-blue-500' : 'text-slate-500'}`}>
+          <LayoutDashboard className="w-6 h-6" />
+          <span className="text-[10px] font-bold">ראשי</span>
+        </button>
+        <button onClick={() => setActiveTab('profile')} className={`flex flex-col items-center gap-1 ${activeTab === 'profile' ? 'text-blue-500' : 'text-slate-500'}`}>
+          <User className="w-6 h-6" />
+          <span className="text-[10px] font-bold">פרופיל</span>
+        </button>
+        <button className="flex flex-col items-center gap-1 text-slate-500">
+          <Settings className="w-6 h-6" />
+          <span className="text-[10px] font-bold">הגדרות</span>
+        </button>
+      </nav>
     </div>
   );
 }
